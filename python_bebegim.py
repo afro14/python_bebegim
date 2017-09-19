@@ -175,6 +175,7 @@ Soru cevaplanmadan sayfa kapatılırsa, oyunu sıfırlar."""
     def bonus_butonu(self, buton):
         buton['state'] = tk.DISABLED
         buton['text'] = 'B'
+        soru = BonusTopLevel(self, self.kontrolcu)
         self.buton_sayisi -= 1
     
     def bos_butonlar(self, buton):
@@ -333,7 +334,7 @@ ve dosyaları oluşturur."""
         
         dosya_listesi = ["soru0.py", "soru1.py", "soru2.py", "soru3.py",
                          "soru4.py", "soru5.py", "soru6.py", "soru7.py",
-                         "soru8.py", "soru9.py"]
+                         "soru8.py", "soru9.py", "soru10.py"]
         
         soru0 = """
 #Üç kenarı a,b,c değişkenleriyle
@@ -460,6 +461,11 @@ def fibonacci_bul(sayi_sirasi):
 print("{}. sıradaki fibonacci sayısı {}.".format(6, fibonacci_bul(6)))
 print("{}. sıradaki fibonacci sayısı {}.".format(10, fibonacci_bul(10)))
 """
+        soru10 = """
+def toplama_islemi(x, y, z):
+    return x+y+z    
+print(toplama_islemi(1, 2, 3))
+"""
         
         for dosya in dosya_listesi:
             if os.path.exists(YOL_1 + os.sep + dosya):
@@ -498,15 +504,31 @@ siler."""
         dosya_nesnesi.close()
                 
         return soru_metni, betik
-    
+
     @classmethod
-    def dosya_sec(cls):
+    def bonus_dosya_formatlayici(cls, dosya_adi):
+        soru_metni = """"""
+        betik = """"""
+        dosya_nesnesi = open(dosya_adi, 'r')
+
+        for satir in dosya_nesnesi.readlines():
+            if satir[0] != '#':
+                yeni_satir = satir.replace('#', '')
+                soru_metni += yeni_satir
+            elif satir == os.linesep:
+                pass
+        dosya_nesnesi.close()
+
+        return soru_metni, betik
+
+    @classmethod
+    def dosya_sec(cls,yol):
         """soru dosyaları arasından rastgele bir
 dosyayı seçer ve okunmak için döndürür."""
-        dosya_listesi = os.listdir(YOL_1)
+        dosya_listesi = os.listdir(yol)
         rastgele_dosya = rnd.choice(dosya_listesi)
         
-        return os.path.join(YOL_1, rastgele_dosya)
+        return os.path.join(yol, rastgele_dosya)
         
     @classmethod    
     def cevap_dosyasi(cls, metin):
@@ -514,7 +536,14 @@ dosyayı seçer ve okunmak için döndürür."""
         dosya = open(os.path.join(YOL_3, "cevap.py"), 'w')
         dosya.write(metin)
         dosya.close()
-        
+
+    @classmethod
+    def bonus_cevap(cls, metin):
+        "bonus soruları yazar."
+        dosya = open(os.path.join(YOL_2, "cevap.py"), "w")
+        dosya.write(metin)
+        dosya.close()
+
     @classmethod
     def satir_sutun(cls, iki_boyutlu_liste):
         "verilen 2 boyutlu listenin eleman sayısını bulur."
@@ -574,7 +603,7 @@ Kullanıcıya sorulacak soru ve kullanıcı girişi burada bulunur."""
         self.kro = Kronometre(self, 60, "self.tasiyici.patlama()")
         self.kro.grid(row=3, column=0)
         
-        self.soru_dosyasi = Islemler.dosya_sec()
+        self.soru_dosyasi = Islemler.dosya_sec(YOL_1)
         #soru metni ile betik ayrılır ve betiğin bazı satırları silinir.
         soru, betik = Islemler.dosya_formatlayici(self.soru_dosyasi)
         self.yrm = Islemler.yorumlayici_bul()#yorumlayıci bul
@@ -654,7 +683,104 @@ karşılaştırır."""
     def sayfayi_kapat(self):
         self.destroy()
 
-        
+class BonusTopLevel(tk.Toplevel):
+
+    def __init__(self, tasiyici, kontrolcu):
+        super().__init__(tasiyici)
+
+        self.kontrolcu = kontrolcu
+        self.tasiyici = tasiyici
+
+        self.wm_title("B")
+        self.resizable(width=False, height=False)  # boyutu sabitle
+        # eğer sayfa kapatılırsa oyunu sıfırla
+        self.protocol("WM_DELETE_WINDOW", self.patlama)
+
+        self.kro = Kronometre(self, 60, "self.tasiyici.patlama()")
+        self.kro.grid(row=3, column=0)
+
+        self.soru_dosyasi = Islemler.dosya_sec(YOL_1)
+        # soru metni ile betik ayrılır.
+        soru, betik = Islemler.bonus_dosya_formatlayici(self.soru_dosyasi)
+        self.yrm = Islemler.yorumlayici_bul()  # yorumlayıci bul
+        self.soru_etiketi = tk.Label(self, text=soru, justify=tk.LEFT)
+        self.soru_etiketi.grid(row=0, column=0)
+
+        self.kod_girisi = tk.Text(self, background="black",
+                                  foreground="yellow",
+                                  insertbackground="yellow")
+        self.kod_girisi.grid(row=1, column=0)
+        self.kod_girisi.insert(tk.END, betik)
+        # kod giriş yerinde tab tuşunun sinyallerini
+        # yakalar ve tab fonksiyonunu çalıştırır.
+        self.kod_girisi.bind("<Tab>", self.tab)
+
+        self.islem_butonu = tk.Button(self, text="Derle",
+                                      relief=tk.RAISED, command=self.islem)
+        self.islem_butonu.grid(row=2, column=0)
+
+    def tab(self, arg):
+        """Metin giriş yerinde python girintileme
+yapısına uygun tab boşluklarını oluşturur."""
+        # print("tab pressed")
+        self.kod_girisi.insert(tk.INSERT, " " * 4)
+        return 'break'
+
+    def islem(self):
+        """
+Kullanıcının tamamladığı kod metnini çeker ve bunu
+bir betik dosyasına kaydeder.Sonra betik_islet fonksiyonu
+ile kullancının girdiyse oluşan betiği ve ana betiği
+karşılaştırır."""
+        kullanıcı_kodu = self.kod_girisi.get("1.0", tk.END)
+        Islemler.bonus_cevap(kullanıcı_kodu)
+        kullanici_dosyasi = os.path.join(YOL_2, "cevap.py")
+        cozum_cıktısı = Islemler.betik_islet([self.yrm,
+                                              self.soru_dosyasi])
+        k_cıktısı = Islemler.betik_islet([self.yrm, kullanici_dosyasi])
+        if cozum_cıktısı[0] == kullanıcı_kodu:
+            # kalan süre kadar puan ekle
+            self.tasiyici.puan_etiketi["text"] = str(eval(
+                self.tasiyici.puan_etiketi["text"]) + self.kro.sure)
+            self.sayfayi_temizle()
+            # görüntülenecek fotoğrafı oluştur.
+            self.foto = tk.PhotoImage(file=os.path.join(YOL_4,
+                                                        "tebrik.gif"))
+            self.etiket = tk.Label(self, image=self.foto)
+            self.etiket.pack()
+
+            self.buton = tk.Button(self, text="kapat",
+                                   command=self.sayfayi_kapat)
+            self.buton.pack()
+
+        else:
+            print(kullanıcı_kodu)
+            print(cozum_cıktısı[0]+"a")
+
+            self.patlama()
+
+    def patlama(self):
+        self.sayfayi_temizle()
+        self.kontrolcu.sayfa_yenile(["Oyun"])
+
+        self.foto = tk.PhotoImage(file=os.path.join(YOL_4,
+                                                    "patlama.gif"))
+        self.etiket = tk.Label(self, image=self.foto)
+        self.etiket.pack()
+
+        self.buton = tk.Button(self, text="kapat",
+                               command=self.sayfayi_kapat)
+        self.buton.pack()
+
+    def sayfayi_temizle(self):
+        "sayfadaki tüm eşyaları siler."
+        for w in self.winfo_children():
+            w.destroy()
+
+    def sayfayi_kapat(self):
+        self.destroy()
+
+
 if __name__ == "__main__":
     app = PythonBebegim()
     app.mainloop()
