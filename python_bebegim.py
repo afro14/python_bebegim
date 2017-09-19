@@ -230,6 +230,7 @@ listesindeki elemanların sırasına göre azalır."""
                 if random_sayi == 0 or random_sayi == 100:
                     #random sayı 0 veya 100 ise
                     bir_satir.append(esya_listesi[-1])
+
                 elif random_sayi > 10 and random_sayi < 90:
                     #random sayı 10 ile 80 arasında ise
                     bir_satir.append(esya_listesi[0])
@@ -243,6 +244,7 @@ listesindeki elemanların sırasına göre azalır."""
             harita.append(bir_satir)
         
         return harita
+
         
     @classmethod
     def harita_kontrolu(cls, harita, esya_listesi=['x', 'b', '?']):
@@ -296,7 +298,8 @@ haritayı son harita olarak döndürür."""
         #popen nesnesi çıktılar ve hataları byte olarak döndürür.
         #byte'ları utf-8 karakter kodlama sistemine çevirerek
         #anlaşılır çıktılar elde ederiz.
-        return cikti.decode("utf-8"), hata.decode("utf-8")
+
+        return cikti, hata
         
     @classmethod
     def yorumlayici_bul(cls):
@@ -512,11 +515,12 @@ siler."""
         dosya_nesnesi = open(dosya_adi, 'r')
 
         for satir in dosya_nesnesi.readlines():
-            if satir[0] != '#':
-                yeni_satir = satir.replace('#', '')
-                soru_metni += yeni_satir
-            elif satir == os.linesep:
+            if satir == os.linesep:
                 pass
+            else:
+                yeni_satir = satir
+                soru_metni += yeni_satir
+
         dosya_nesnesi.close()
 
         return soru_metni, betik
@@ -735,8 +739,7 @@ karşılaştırır."""
         kullanıcı_kodu = self.kod_girisi.get("1.0", tk.END)
         Islemler.bonus_cevap(kullanıcı_kodu)
         kullanici_dosyasi = os.path.join(YOL_2, "cevap.py")
-        cozum_cıktısı = Islemler.betik_islet([self.yrm,
-                                              self.soru_dosyasi])
+        cozum_cıktısı = Islemler.betik_islet([self.yrm,self.soru_dosyasi])
         k_cıktısı = Islemler.betik_islet([self.yrm, kullanici_dosyasi])
         if cozum_cıktısı[0] == kullanıcı_kodu:
             # kalan süre kadar puan ekle
@@ -754,9 +757,6 @@ karşılaştırır."""
             self.buton.pack()
 
         else:
-            print(kullanıcı_kodu)
-            print(cozum_cıktısı[0]+"a")
-
             self.patlama()
 
     def patlama(self):
